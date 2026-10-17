@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DSA Revision Buddy - Interactive Test Harness & Demo</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      background: #1A1A1A;
+      color: #E0E0E0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #282828;
+      border-bottom: 1px solid #3E3E3E;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      font-size: 16px;
+      color: #FFA116; /* LeetCode orange */
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 16px;
+      font-size: 14px;
+      color: #A0A0A0;
+    }
+
+    .nav-links a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .nav-links a.active {
+      color: #FFFFFF;
+      font-weight: 600;
+    }
+
+    .simulation-bar {
+      background: #222222;
+      border-bottom: 1px solid #333333;
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .sim-btn {
+      background: #333333;
+      color: #E2E8F0;
+      border: 1px solid #444444;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12.5px;
+      font-weight: 600;
+      transition: background 0.15s ease;
+    }
+
+    .sim-btn:hover {
+      background: #444444;
+      color: #FFFFFF;
+    }
+
+    .sim-status {
+      font-size: 12px;
+      color: #94A3B8;
+      margin-left: auto;
+    }
+
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      padding: 24px;
+    }
+
+    .problem-pane {
+      background: #262626;
+      border: 1px solid #333333;
+      border-radius: 12px;
+      padding: 24px;
+      overflow-y: auto;
+    }
+
+    .problem-header {
+      font-size: 22px;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin-bottom: 12px;
+    }
+
+    .tags-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .badge-diff {
+      background: rgba(0, 184, 163, 0.15);
+      color: #00B8A3;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .problem-text {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #CCCCCC;
+    }
+
+    .editor-pane {
+      background: #262626;
+      border: 1px solid #333333;
+      border-radius: 12px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .code-box {
+      flex: 1;
+      background: #1E1E1E;
+      border-radius: 8px;
+      padding: 16px;
+      font-family: monospace;
+      color: #A9B7C6;
+      font-size: 13.5px;
+      line-height: 1.5;
+      overflow: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LeetCode Mock Navbar -->
+  <header>
+    <div class="brand">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="#FFA116"><path d="M16.102 17.93l-2.697 2.607c-.466.467-1.111.662-1.823.662s-1.357-.195-1.824-.662l-4.332-4.363c-.467-.467-.702-1.15-.702-1.863s.235-1.357.702-1.824l4.319-4.38c.467-.467 1.125-.645 1.837-.645s1.357.195 1.823.662l2.697 2.606c.514.515 1.365.497 1.9-.038.535-.536.553-1.387.039-1.901l-2.609-2.636a5.21 5.21 0 0 0-3.708-1.52c-1.42 0-2.84.536-3.923 1.62L3.25 10.239c-2.164 2.164-2.164 5.679 0 7.842l4.319 4.38c1.082 1.083 2.502 1.62 3.923 1.62 1.42 0 2.84-.537 3.923-1.62l2.609-2.636c.514-.514.496-1.365-.039-1.901-.535-.535-1.386-.553-1.9-.038z"/></svg>
+      <span>LeetCode Mock Workspace</span>
+    </div>
+    <div class="nav-links">
+      <a href="#" class="active">Problems</a>
+      <a href="#">Contest</a>
+      <a href="#">Discuss</a>
+      <a href="#">Interview</a>
+    </div>
+  </header>
+
+  <!-- Interactive Test & Simulation Controls -->
+  <div class="simulation-bar">
+    <span style="font-size: 13px; font-weight: 700; color: #FFF;">Test Simulations:</span>
+    <button class="sim-btn" id="sim-btn-midnight">🌙 Simulate Midnight Reset</button>
+    <button class="sim-btn" id="sim-btn-open-panel">⚡ Open DSA Revision Panel</button>
+    <button class="sim-btn" id="sim-btn-show-invitation">💌 Trigger Daily Invitation</button>
+    <button class="sim-btn" id="sim-btn-reset-storage">🔄 Clear All & Reset Demo Data</button>
+    <span class="sim-status" id="sim-status-display">Active Date: Today</span>
+  </div>
+
+  <!-- LeetCode Problem Content Area -->
+  <main>
+    <div class="problem-pane">
+      <div class="tags-row">
+        <span class="badge-diff">Easy</span>
+        <span style="font-size: 12px; color: #888;">Topics: Array, Hash Table</span>
+      </div>
+      <div class="problem-header">1. Two Sum</div>
+      <div class="problem-text">
+        <p>Given an array of integers <code>nums</code> and an integer <code>target</code>, return <em>indices of the two numbers such that they add up to <code>target</code></em>.</p>
+        <p>You may assume that each input would have <strong>exactly one solution</strong>, and you may not use the same element twice.</p>
+        <p><strong>Example 1:</strong><br>
+        <code>Input: nums = [2,7,11,15], target = 9<br>Output: [0,1]<br>Explanation: Because nums[0] + nums[1] == 9, we return [0, 1].</code></p>
+      </div>
+    </div>
+
+    <div class="editor-pane">
+      <div style="font-size: 13px; color: #888; margin-bottom: 10px;">JavaScript (Node.js)</div>
+      <div class="code-box">
+<pre>/**
+ * @param {number[]} nums
+ * @param {number} target
+ * @return {number[]}
+ */
+var twoSum = function(nums, target) {
+    const map = new Map();
+    for (let i = 0; i < nums.length; i++) {
+        const complement = target - nums[i];
+        if (map.has(complement)) {
+            return [map.get(complement), i];
+        }
+        map.set(nums[i], i);
+    }
+    return [];
+};</pre>
+      </div>
+    </div>
+  </main>
+
+  <!-- Mount Host for Extension Content Script -->
+  <div id="dsa-revision-buddy-host"></div>
+
+  <script src="../content/content.bundle.js"></script>
+  <script type="module" src="harness.js"></script>
+</body>
+</html>
