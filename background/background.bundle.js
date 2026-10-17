@@ -437,6 +437,121 @@ var STARTER_QUESTIONS = [
   }
 ];
 
+// src/services/dsaClassifier.js
+var DSA_TOPICS_MAP = {
+  "Arrays and Hashing": [
+    "array",
+    "hash table",
+    "hash",
+    "hashing",
+    "counting",
+    "prefix sum"
+  ],
+  "Strings": [
+    "string",
+    "string matching",
+    "rolling hash"
+  ],
+  "Two Pointers": [
+    "two pointers",
+    "two pointer"
+  ],
+  "Sliding Window": [
+    "sliding window"
+  ],
+  "Binary Search": [
+    "binary search",
+    "bisection"
+  ],
+  "Sorting": [
+    "sorting",
+    "sort",
+    "bucket sort",
+    "radix sort",
+    "merge sort",
+    "quickselect"
+  ],
+  "Linked Lists": [
+    "linked list",
+    "doubly-linked list",
+    "doubly linked list"
+  ],
+  "Stacks and Queues": [
+    "stack",
+    "queue",
+    "monotonic queue",
+    "deque"
+  ],
+  "Recursion and Backtracking": [
+    "recursion",
+    "backtracking"
+  ],
+  "Trees and Binary Trees": [
+    "tree",
+    "binary tree"
+  ],
+  "Binary Search Trees": [
+    "binary search tree",
+    "bst"
+  ],
+  "Heaps and Priority Queues": [
+    "heap (priority queue)",
+    "heap",
+    "priority queue"
+  ],
+  "Graphs": [
+    "graph",
+    "breadth-first search",
+    "depth-first search",
+    "bfs",
+    "dfs",
+    "topological sort",
+    "shortest path",
+    "minimum spanning tree",
+    "union find",
+    "biconnected component",
+    "strongly connected component",
+    "eulerian circuit"
+  ],
+  "Greedy Algorithms": [
+    "greedy"
+  ],
+  "Dynamic Programming": [
+    "dynamic programming",
+    "dp",
+    "memoization"
+  ],
+  "Tries": [
+    "trie"
+  ],
+  "Bit Manipulation": [
+    "bit manipulation",
+    "bitmask",
+    "bitwise"
+  ],
+  "Intervals": [
+    "intervals",
+    "interval",
+    "line sweep"
+  ],
+  "Monotonic Stack": [
+    "monotonic stack"
+  ],
+  "Math and Bitwise DSA": [
+    "math",
+    "number theory",
+    "combinatorics",
+    "geometry",
+    "game theory",
+    "probability and statistics",
+    "matrix",
+    "divide and conquer",
+    "segment tree",
+    "binary indexed tree"
+  ]
+};
+var CANONICAL_DSA_TOPICS = Object.keys(DSA_TOPICS_MAP);
+
 // src/services/scheduler.js
 var DEFAULT_SETTINGS = {
   dailyTarget: 3,
@@ -446,7 +561,9 @@ var DEFAULT_SETTINGS = {
     hard: 4
   },
   autoOpenProblemTab: true,
-  showInvitation: true
+  showInvitation: true,
+  questionSource: "dsa_only",
+  customTopics: CANONICAL_DSA_TOPICS
 };
 
 // src/storage/storage.js
@@ -513,7 +630,9 @@ async function getSettings() {
     intervals: {
       ...DEFAULT_SETTINGS.intervals,
       ...settings && settings.intervals || {}
-    }
+    },
+    questionSource: settings?.questionSource || DEFAULT_SETTINGS.questionSource || "dsa_only",
+    customTopics: Array.isArray(settings?.customTopics) ? settings.customTopics : DEFAULT_SETTINGS.customTopics
   };
 }
 async function getDailyProgress() {

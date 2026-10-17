@@ -87,11 +87,11 @@ test('Spaced Repetition Scheduler - interval calculations', () => {
 test('Spaced Repetition Scheduler - question selection priority', () => {
   const today = '2026-10-17';
   const library = [
-    { id: '1', title: 'Two Sum', status: 'solved', nextRevisionDate: '2026-10-15', revisionCount: 1 }, // Overdue (2 days ago)
-    { id: '2', title: 'Add Two Numbers', status: 'solved', nextRevisionDate: '2026-10-17', revisionCount: 1 }, // Due today
-    { id: '3', title: 'Longest Substring', status: 'solved', nextRevisionDate: '2026-10-20', revisionCount: 2 }, // Due in future
-    { id: '4', title: 'Median of Two Arrays', status: 'solved', nextRevisionDate: null, lastRevisionDate: null }, // Unrevised
-    { id: '5', title: 'Longest Palindrome', status: 'solved', nextRevisionDate: '2026-10-10', revisionCount: 1 } // Most Overdue (7 days ago)
+    { id: '1', title: 'Two Sum', topics: ['Array', 'Hash Table'], status: 'solved', nextRevisionDate: '2026-10-15', revisionCount: 1 }, // Overdue (2 days ago)
+    { id: '2', title: 'Add Two Numbers', topics: ['Linked List', 'Math'], status: 'solved', nextRevisionDate: '2026-10-17', revisionCount: 1 }, // Due today
+    { id: '3', title: 'Longest Substring', topics: ['Hash Table', 'Sliding Window'], status: 'solved', nextRevisionDate: '2026-10-20', revisionCount: 2 }, // Due in future
+    { id: '4', title: 'Median of Two Arrays', topics: ['Array', 'Binary Search'], status: 'solved', nextRevisionDate: null, lastRevisionDate: null }, // Unrevised
+    { id: '5', title: 'Longest Palindrome', topics: ['Two Pointers', 'String'], status: 'solved', nextRevisionDate: '2026-10-10', revisionCount: 1 } // Most Overdue (7 days ago)
   ];
 
   // 1. Most overdue question (#5) should be selected first

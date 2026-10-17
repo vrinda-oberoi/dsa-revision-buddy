@@ -9,6 +9,11 @@ import {
   getDaysDifference
 } from './dateUtils.js';
 
+import {
+  isQuestionEligible,
+  CANONICAL_DSA_TOPICS
+} from './dsaClassifier.js';
+
 export const DEFAULT_SETTINGS = {
   dailyTarget: 3,
   intervals: {
@@ -17,7 +22,9 @@ export const DEFAULT_SETTINGS = {
     hard: 4
   },
   autoOpenProblemTab: true,
-  showInvitation: true
+  showInvitation: true,
+  questionSource: 'dsa_only',
+  customTopics: CANONICAL_DSA_TOPICS
 };
 
 /**
@@ -56,14 +63,16 @@ export function calculateNextRevision(feedback, currentRevisionCount = 0, option
 }
 
 /**
- * Filter questions that are due or overdue for revision today
+ * Filter questions that are due or overdue for revision today and match eligibility settings
  * @param {Array} library 
  * @param {string} [todayStr] 
+ * @param {object} [settings] 
  * @returns {Array}
  */
-export function getDueQuestions(library = [], todayStr = getTodayDateString()) {
+export function getDueQuestions(library = [], todayStr = getTodayDateString(), settings = DEFAULT_SETTINGS) {
   return library.filter(q => {
     if (!q || !q.nextRevisionDate) return false;
+    if (!isQuestionEligible(q, settings)) return false;
     return isDueOrOverdue(q.nextRevisionDate, todayStr);
   });
 }
@@ -72,9 +81,10 @@ export function getDueQuestions(library = [], todayStr = getTodayDateString()) {
  * Categorize questions by revision urgency
  * @param {Array} library 
  * @param {string} [todayStr] 
+ * @param {object} [settings]
  * @returns {object}
  */
-export function categorizeLibrary(library = [], todayStr = getTodayDateString()) {
+export function categorizeLibrary(library = [], todayStr = getTodayDateString(), settings = DEFAULT_SETTINGS) {
   const overdue = [];
   const dueToday = [];
   const upcoming = [];
@@ -82,6 +92,7 @@ export function categorizeLibrary(library = [], todayStr = getTodayDateString())
 
   for (const q of library) {
     if (!q) continue;
+    if (!isQuestionEligible(q, settings)) continue;
     if (!q.nextRevisionDate) {
       unrevised.push(q);
       continue;
@@ -106,20 +117,24 @@ export function categorizeLibrary(library = [], todayStr = getTodayDateString())
 
 /**
  * Select the next question to revise according to revision rules:
- * 1. Prioritize questions whose next revision date is due or overdue
- * 2. If no questions are due, select from remaining eligible solved questions
- * 3. Avoid showing same question twice in single day unless allowRepeatsToday is true
+ * 1. Exclude questions manually marked as excluded
+ * 2. Apply the selected question-source filter (DSA Only, All, Custom)
+ * 3. Prioritize questions whose next revision date is due or overdue
+ * 4. Avoid showing same question twice in single day unless allowRepeatsToday is true
+ * 5. If no eligible questions are available, show helpful reason
  * 
  * @param {Array} library 
  * @param {Array<string>} completedTodayIds 
  * @param {object} [options]
  * @param {boolean} [options.allowRepeatsToday=false]
  * @param {string} [options.todayStr]
+ * @param {object} [options.settings]
  * @returns {{ question: object|null, reason: string, stats: object }}
  */
 export function selectNextQuestion(library = [], completedTodayIds = [], options = {}) {
   const allowRepeats = options.allowRepeatsToday || false;
   const todayStr = options.todayStr || getTodayDateString();
+  const settings = options.settings || DEFAULT_SETTINGS;
 
   if (!Array.isArray(library) || library.length === 0) {
     return {
@@ -129,18 +144,29 @@ export function selectNextQuestion(library = [], completedTodayIds = [], options
     };
   }
 
-  // Eligible pool: prefer solved questions
-  let eligiblePool = library.filter(q => q && (q.status === 'solved' || !q.status));
-  if (eligiblePool.length === 0) {
-    eligiblePool = [...library];
+  // Rules 1 & 2: Filter library by eligibility (Manual exclusions + Question-source filter)
+  const eligibleQuestions = library.filter(q => isQuestionEligible(q, settings));
+
+  if (eligibleQuestions.length === 0) {
+    return {
+      question: null,
+      reason: 'no_eligible_questions',
+      stats: { total: library.length, dueCount: 0, remainingEligible: 0 }
+    };
   }
 
-  // Filter out questions already revised today unless repeats are allowed
+  // Eligible pool: prefer solved questions
+  let eligiblePool = eligibleQuestions.filter(q => q && (q.status === 'solved' || !q.status));
+  if (eligiblePool.length === 0) {
+    eligiblePool = [...eligibleQuestions];
+  }
+
+  // Rule 4: Filter out questions already revised today unless repeats are allowed
   const uncompletedPool = allowRepeats
     ? eligiblePool
     : eligiblePool.filter(q => !completedTodayIds.includes(String(q.id)));
 
-  // 1. Due or Overdue Questions
+  // Rule 3: Due or Overdue Questions
   const dueQuestions = uncompletedPool.filter(q => q.nextRevisionDate && isDueOrOverdue(q.nextRevisionDate, todayStr));
   
   if (dueQuestions.length > 0) {

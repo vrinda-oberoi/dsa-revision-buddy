@@ -928,6 +928,204 @@ var UI_STYLES = `
   color: #1E40AF;
   border: 1px solid #BFDBFE;
 }
+
+/* Category Badges */
+.dsa-cat-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.dsa-cat-dsa {
+  background: var(--dsa-easy-bg);
+  color: var(--dsa-easy-text);
+  border: 1px solid var(--dsa-easy-border);
+}
+
+.dsa-cat-nondsa {
+  background: var(--dsa-hard-bg);
+  color: var(--dsa-hard-text);
+  border: 1px solid var(--dsa-hard-border);
+}
+
+.dsa-cat-review {
+  background: var(--dsa-med-bg);
+  color: var(--dsa-med-text);
+  border: 1px solid var(--dsa-med-border);
+}
+
+/* Revision Source Options in Settings */
+.dsa-source-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.dsa-source-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #F8FAFC;
+  border: 1.5px solid var(--dsa-border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dsa-source-option:hover {
+  border-color: var(--dsa-purple-border);
+}
+
+.dsa-source-option.active {
+  background: var(--dsa-purple-light);
+  border-color: var(--dsa-purple-start);
+}
+
+.dsa-source-radio {
+  margin-top: 3px;
+  cursor: pointer;
+  accent-color: var(--dsa-purple-start);
+}
+
+.dsa-source-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.dsa-source-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--dsa-text-main);
+}
+
+.dsa-source-desc {
+  font-size: 11.5px;
+  color: var(--dsa-text-muted);
+}
+
+/* Custom Topics Grid */
+.dsa-custom-topics-box {
+  background: #F8FAFC;
+  border: 1px solid var(--dsa-border);
+  border-radius: 12px;
+  padding: 12px;
+  margin-top: 8px;
+  animation: dsaFadeIn 0.2s ease;
+}
+
+.dsa-topics-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.dsa-topics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 6px;
+  max-height: 190px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.dsa-topic-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  background: #FFFFFF;
+  border: 1px solid var(--dsa-border);
+  border-radius: 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--dsa-text-main);
+  cursor: pointer;
+  user-select: none;
+}
+
+.dsa-topic-chip:hover {
+  border-color: var(--dsa-purple-border);
+}
+
+.dsa-topic-chip input[type="checkbox"] {
+  accent-color: var(--dsa-purple-start);
+  cursor: pointer;
+}
+
+/* Manage Questions Screen */
+.dsa-manage-stats {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.dsa-stat-chip {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #FFFFFF;
+  border: 1px solid var(--dsa-border);
+  color: var(--dsa-text-muted);
+}
+
+/* iOS-Style Toggle Switch */
+.dsa-switch {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.dsa-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.dsa-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #CBD5E1;
+  transition: 0.25s;
+  border-radius: 34px;
+}
+
+.dsa-slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.25s;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+input:checked + .dsa-slider {
+  background: linear-gradient(135deg, var(--dsa-purple-start) 0%, var(--dsa-purple-end) 100%);
+}
+
+input:checked + .dsa-slider:before {
+  transform: translateX(16px);
+}
+
 `;
 
 // src/services/dateUtils.js
@@ -1006,6 +1204,224 @@ function formatFriendlyDate(dateStr, todayStr = getTodayDateString()) {
   if (diff < -1) return `${Math.abs(diff)} days overdue`;
   const d = parseLocalDate(dateStr);
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+// src/services/dsaClassifier.js
+var NON_DSA_TAGS = /* @__PURE__ */ new Set([
+  "database",
+  "sql",
+  "pandas",
+  "shell",
+  "bash",
+  "concurrency",
+  "operating system",
+  "multithreading"
+]);
+var DSA_TOPICS_MAP = {
+  "Arrays and Hashing": [
+    "array",
+    "hash table",
+    "hash",
+    "hashing",
+    "counting",
+    "prefix sum"
+  ],
+  "Strings": [
+    "string",
+    "string matching",
+    "rolling hash"
+  ],
+  "Two Pointers": [
+    "two pointers",
+    "two pointer"
+  ],
+  "Sliding Window": [
+    "sliding window"
+  ],
+  "Binary Search": [
+    "binary search",
+    "bisection"
+  ],
+  "Sorting": [
+    "sorting",
+    "sort",
+    "bucket sort",
+    "radix sort",
+    "merge sort",
+    "quickselect"
+  ],
+  "Linked Lists": [
+    "linked list",
+    "doubly-linked list",
+    "doubly linked list"
+  ],
+  "Stacks and Queues": [
+    "stack",
+    "queue",
+    "monotonic queue",
+    "deque"
+  ],
+  "Recursion and Backtracking": [
+    "recursion",
+    "backtracking"
+  ],
+  "Trees and Binary Trees": [
+    "tree",
+    "binary tree"
+  ],
+  "Binary Search Trees": [
+    "binary search tree",
+    "bst"
+  ],
+  "Heaps and Priority Queues": [
+    "heap (priority queue)",
+    "heap",
+    "priority queue"
+  ],
+  "Graphs": [
+    "graph",
+    "breadth-first search",
+    "depth-first search",
+    "bfs",
+    "dfs",
+    "topological sort",
+    "shortest path",
+    "minimum spanning tree",
+    "union find",
+    "biconnected component",
+    "strongly connected component",
+    "eulerian circuit"
+  ],
+  "Greedy Algorithms": [
+    "greedy"
+  ],
+  "Dynamic Programming": [
+    "dynamic programming",
+    "dp",
+    "memoization"
+  ],
+  "Tries": [
+    "trie"
+  ],
+  "Bit Manipulation": [
+    "bit manipulation",
+    "bitmask",
+    "bitwise"
+  ],
+  "Intervals": [
+    "intervals",
+    "interval",
+    "line sweep"
+  ],
+  "Monotonic Stack": [
+    "monotonic stack"
+  ],
+  "Math and Bitwise DSA": [
+    "math",
+    "number theory",
+    "combinatorics",
+    "geometry",
+    "game theory",
+    "probability and statistics",
+    "matrix",
+    "divide and conquer",
+    "segment tree",
+    "binary indexed tree"
+  ]
+};
+var CANONICAL_DSA_TOPICS = Object.keys(DSA_TOPICS_MAP);
+function normalizeTag(tag) {
+  if (!tag) return "";
+  return String(tag).trim().toLowerCase();
+}
+function classifyQuestion(question) {
+  if (!question) {
+    return {
+      isDsa: false,
+      isNonDsa: false,
+      needsReview: true,
+      matchedTopics: [],
+      categoryLabel: "Needs Review",
+      reason: "No question data provided"
+    };
+  }
+  const rawTopics = Array.isArray(question.topics) ? question.topics : [];
+  const normalizedTags = rawTopics.map((t) => normalizeTag(t)).filter(Boolean);
+  const urlLower = String(question.url || "").toLowerCase();
+  const hasSqlInUrl = urlLower.includes("/database/") || urlLower.includes("/pandas/");
+  const matchedNonDsaTag = normalizedTags.find((tag) => NON_DSA_TAGS.has(tag));
+  if (matchedNonDsaTag || hasSqlInUrl) {
+    return {
+      isDsa: false,
+      isNonDsa: true,
+      needsReview: false,
+      matchedTopics: [],
+      categoryLabel: "Non-DSA",
+      reason: `Contains non-DSA tag: ${matchedNonDsaTag || "Database/Pandas"}`
+    };
+  }
+  if (normalizedTags.length === 0) {
+    return {
+      isDsa: false,
+      isNonDsa: false,
+      needsReview: true,
+      matchedTopics: [],
+      categoryLabel: "Needs Review",
+      reason: "Missing topic tags (Needs Review)"
+    };
+  }
+  const matchedCanonicalTopics = /* @__PURE__ */ new Set();
+  for (const [canonicalTopic, tagAliases] of Object.entries(DSA_TOPICS_MAP)) {
+    for (const tag of normalizedTags) {
+      if (tagAliases.some((alias) => alias === tag || tag.includes(alias))) {
+        matchedCanonicalTopics.add(canonicalTopic);
+      }
+    }
+  }
+  const matchedTopicsList = Array.from(matchedCanonicalTopics);
+  if (matchedTopicsList.length > 0) {
+    return {
+      isDsa: true,
+      isNonDsa: false,
+      needsReview: false,
+      matchedTopics: matchedTopicsList,
+      categoryLabel: "DSA",
+      reason: `Matched DSA topics: ${matchedTopicsList.join(", ")}`
+    };
+  }
+  return {
+    isDsa: false,
+    isNonDsa: false,
+    needsReview: true,
+    matchedTopics: [],
+    categoryLabel: "Needs Review",
+    reason: `Unrecognized topic tags: ${rawTopics.join(", ")} (Needs Review)`
+  };
+}
+function isQuestionEligible(question, settings = {}) {
+  if (!question) return false;
+  if (question.manualInclusion === "excluded" || question.isExcluded === true) {
+    return false;
+  }
+  if (question.manualInclusion === "included") {
+    return true;
+  }
+  const source = settings.questionSource || "dsa_only";
+  const classification = classifyQuestion(question);
+  if (source === "all") {
+    return true;
+  }
+  if (source === "dsa_only") {
+    return classification.isDsa && !classification.isNonDsa && !classification.needsReview;
+  }
+  if (source === "custom") {
+    const activeCustomTopics = Array.isArray(settings.customTopics) && settings.customTopics.length > 0 ? settings.customTopics : CANONICAL_DSA_TOPICS;
+    if (!classification.isDsa || classification.isNonDsa) {
+      return false;
+    }
+    return classification.matchedTopics.some((topic) => activeCustomTopics.includes(topic));
+  }
+  return false;
 }
 
 // src/ui/components.js
@@ -1101,6 +1517,7 @@ function getModalHeaderHTML(activeTab = "revision") {
   const tabs = [
     { id: "revision", label: "Revise", icon: "\u26A1" },
     { id: "library", label: "Library", icon: "\u{1F4DA}" },
+    { id: "manage", label: "Manage", icon: "\u{1F3AF}" },
     { id: "schedule", label: "Schedule", icon: "\u{1F4C5}" },
     { id: "history", label: "History", icon: "\u23F3" },
     { id: "settings", label: "Sync & Settings", icon: "\u2699\uFE0F" }
@@ -1260,6 +1677,28 @@ function getRevisionViewHTML(state) {
       </div>
     `;
   }
+  if (state.selectionReason === "no_eligible_questions") {
+    const source = state.settings?.questionSource || "dsa_only";
+    let sourceDesc = "DSA Only";
+    if (source === "custom") sourceDesc = "Custom Topics";
+    else if (source === "all") sourceDesc = "All Solved Questions";
+    return `
+      ${progressBanner}
+      <div class="dsa-section-card" style="text-align: center; padding: 28px 20px;">
+        <div style="font-size: 32px; margin-bottom: 8px;">\u{1F50D}</div>
+        <div style="font-size: 16px; font-weight: 700; color: var(--dsa-text-main); margin-bottom: 6px;">
+          No Eligible Revision Questions Found
+        </div>
+        <div style="font-size: 13px; color: var(--dsa-text-muted); max-width: 380px; margin: 0 auto 18px auto; line-height: 1.4;">
+          Your revision source is currently set to <strong>${sourceDesc}</strong>. No solved problems match this criteria, or matching problems were manually excluded.
+        </div>
+        <div style="display: flex; gap: 8px; justify-content: center;">
+          <button class="dsa-btn-primary" id="dsa-btn-jump-manage">Manage Questions</button>
+          <button class="dsa-btn-secondary" id="dsa-btn-jump-settings">Revision Sources</button>
+        </div>
+      </div>
+    `;
+  }
   return `
     ${progressBanner}
     <div class="dsa-section-card" style="text-align: center; padding: 28px 20px;">
@@ -1336,6 +1775,124 @@ function getLibraryViewHTML(library = [], filter = "all", searchQuery = "") {
       ${filterButtons}
     </div>
     <div class="dsa-question-list">
+      ${rowsHTML}
+    </div>
+  `;
+}
+function getManageQuestionsViewHTML(library = [], filter = "all", searchQuery = "", settings = {}) {
+  const normalizedQuery = searchQuery.toLowerCase().trim();
+  const questionsWithMeta = library.map((q) => {
+    const classification = classifyQuestion(q);
+    const isIncluded = isQuestionEligible(q, settings);
+    const hasManualOverride = q.manualInclusion === "included" || q.manualInclusion === "excluded" || q.isExcluded === true;
+    return {
+      question: q,
+      classification,
+      isIncluded,
+      hasManualOverride
+    };
+  });
+  const totalCount = questionsWithMeta.length;
+  const dsaCount = questionsWithMeta.filter((item) => item.classification.isDsa).length;
+  const nonDsaCount = questionsWithMeta.filter((item) => item.classification.isNonDsa).length;
+  const needsReviewCount = questionsWithMeta.filter((item) => item.classification.needsReview).length;
+  const excludedCount = questionsWithMeta.filter((item) => !item.isIncluded).length;
+  const includedCount = questionsWithMeta.filter((item) => item.isIncluded).length;
+  let filtered = questionsWithMeta.filter((item) => {
+    const q = item.question;
+    if (normalizedQuery) {
+      const matchId = String(q.id).includes(normalizedQuery);
+      const matchTitle = (q.title || "").toLowerCase().includes(normalizedQuery);
+      const matchTopics = (q.topics || []).some((t) => String(t).toLowerCase().includes(normalizedQuery));
+      if (!matchId && !matchTitle && !matchTopics) return false;
+    }
+    if (filter === "dsa") return item.classification.isDsa;
+    if (filter === "nondsa") return item.classification.isNonDsa;
+    if (filter === "needs_review") return item.classification.needsReview;
+    if (filter === "excluded") return !item.isIncluded;
+    if (filter === "included") return item.isIncluded;
+    return true;
+  });
+  const filterButtons = [
+    { id: "all", label: `All (${totalCount})` },
+    { id: "dsa", label: `DSA (${dsaCount})` },
+    { id: "nondsa", label: `Non-DSA (${nonDsaCount})` },
+    { id: "needs_review", label: `Needs Review (${needsReviewCount})` },
+    { id: "included", label: `Included (${includedCount})` },
+    { id: "excluded", label: `Excluded (${excludedCount})` }
+  ].map((b) => `<button class="dsa-filter-btn ${filter === b.id ? "active" : ""}" data-manage-filter="${b.id}">${b.label}</button>`).join("");
+  const rowsHTML = filtered.length > 0 ? filtered.map((item) => {
+    const q = item.question;
+    const diffClass = q.difficulty === "Easy" ? "dsa-diff-easy" : q.difficulty === "Hard" ? "dsa-diff-hard" : "dsa-diff-medium";
+    const topicsHTML = (q.topics || []).length > 0 ? (q.topics || []).slice(0, 3).map((t) => `<span class="dsa-topic-tag">${t}</span>`).join("") : '<span class="dsa-topic-tag" style="color: #B45309;">No tags</span>';
+    let catBadge = "";
+    if (item.classification.isDsa) {
+      catBadge = `<span class="dsa-cat-badge dsa-cat-dsa">\u{1F7E2} DSA</span>`;
+    } else if (item.classification.isNonDsa) {
+      catBadge = `<span class="dsa-cat-badge dsa-cat-nondsa">\u{1F534} Non-DSA</span>`;
+    } else {
+      catBadge = `<span class="dsa-cat-badge dsa-cat-review" title="${item.classification.reason}">\u26A0\uFE0F Needs Review</span>`;
+    }
+    let overrideBadge = "";
+    if (item.hasManualOverride) {
+      overrideBadge = `<span style="font-size: 10px; font-weight: 700; color: var(--dsa-purple-start); margin-left: 4px;" title="Manually overridden by user">(Manual)</span>`;
+    }
+    return `
+      <div class="dsa-list-item" style="padding: 10px 12px;">
+        <div class="dsa-item-left" style="flex: 1; min-width: 0;">
+          <label class="dsa-switch" title="Toggle inclusion in revision">
+            <input type="checkbox" class="dsa-toggle-include" data-question-id="${q.id}" ${item.isIncluded ? "checked" : ""} />
+            <span class="dsa-slider"></span>
+          </label>
+          <div class="dsa-item-title-col" style="flex: 1; min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <span class="dsa-item-title" title="${q.title}">#${q.id}. ${q.title}</span>
+              ${catBadge}
+              ${overrideBadge}
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; margin-top: 3px; flex-wrap: wrap;">
+              <span class="dsa-meta-badge ${diffClass}" style="padding: 1px 5px; font-size: 10px;">${q.difficulty || "Med"}</span>
+              <span style="font-size: 11px; color: ${item.isIncluded ? "var(--dsa-easy-text)" : "var(--dsa-hard-text)"}; font-weight: 600;">
+                ${item.isIncluded ? "\u2713 Included" : "\u2715 Excluded"}
+              </span>
+              <span style="color: #CBD5E1;">\u2022</span>
+              <span style="font-size: 11px; color: var(--dsa-text-muted);">${q.status === "solved" ? "Solved" : "Attempted"}</span>
+              <span style="color: #CBD5E1;">\u2022</span>
+              <div style="display: inline-flex; gap: 4px;">${topicsHTML}</div>
+            </div>
+          </div>
+        </div>
+        <div class="dsa-item-actions">
+          <a href="${q.url}" target="_blank" rel="noopener noreferrer" class="dsa-btn-secondary dsa-btn-mini" title="Open in LeetCode">\u2197</a>
+        </div>
+      </div>
+    `;
+  }).join("") : `<div style="text-align: center; padding: 24px; color: var(--dsa-text-muted);">No questions match the current filter.</div>`;
+  return `
+    <div class="dsa-section-card" style="padding: 12px 14px; margin-bottom: 2px;">
+      <div style="font-size: 13.5px; font-weight: 700; color: var(--dsa-text-main); margin-bottom: 4px;">
+        \u{1F3AF} Manage Revision Questions
+      </div>
+      <div style="font-size: 12px; color: var(--dsa-text-muted); margin-bottom: 8px;">
+        Review synced questions, inspect topic classifications, and toggle whether each question is included or excluded from daily revision.
+      </div>
+      <div class="dsa-manage-stats">
+        <span class="dsa-stat-chip">\u2728 ${dsaCount} DSA</span>
+        <span class="dsa-stat-chip">\u{1F534} ${nonDsaCount} Non-DSA</span>
+        <span class="dsa-stat-chip">\u26A0\uFE0F ${needsReviewCount} Needs Review</span>
+        <span class="dsa-stat-chip">\u{1F6AB} ${excludedCount} Excluded</span>
+      </div>
+    </div>
+
+    <div class="dsa-search-bar">
+      <input type="text" class="dsa-input" id="dsa-manage-search" placeholder="Search by title, number, or tag..." value="${searchQuery}" />
+    </div>
+
+    <div class="dsa-filter-row">
+      ${filterButtons}
+    </div>
+
+    <div class="dsa-question-list" style="max-height: 380px;">
       ${rowsHTML}
     </div>
   `;
@@ -1419,9 +1976,73 @@ function getHistoryViewHTML(history = []) {
 function getSettingsViewHTML(settings, syncMeta, toast = null) {
   const targetOptions = [1, 2, 3, 5, 6, 10];
   const isCustomTarget = !targetOptions.includes(settings.dailyTarget);
+  const currentSource = settings.questionSource || "dsa_only";
+  const customTopics = Array.isArray(settings.customTopics) ? settings.customTopics : CANONICAL_DSA_TOPICS;
   const toastHTML = toast ? `<div class="dsa-toast dsa-toast-${toast.type}">${toast.message}</div>` : "";
   return `
     ${toastHTML}
+
+    <!-- 0. Revision Question Sources -->
+    <div class="dsa-section-card">
+      <div class="dsa-section-title">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        Revision Question Sources
+      </div>
+      <div class="dsa-section-desc">
+        Choose which types of solved problems are eligible for your daily revision sessions.
+      </div>
+      
+      <div class="dsa-source-selector">
+        <label class="dsa-source-option ${currentSource === "dsa_only" ? "active" : ""}">
+          <input type="radio" name="dsa-source-radio" value="dsa_only" class="dsa-source-radio" ${currentSource === "dsa_only" ? "checked" : ""}>
+          <div class="dsa-source-info">
+            <span class="dsa-source-title">DSA Only (Default)</span>
+            <span class="dsa-source-desc">Excludes SQL, Database, Pandas, Shell, and other non-DSA problems. Questions needing review remain excluded unless manually enabled.</span>
+          </div>
+        </label>
+
+        <label class="dsa-source-option ${currentSource === "all" ? "active" : ""}">
+          <input type="radio" name="dsa-source-radio" value="all" class="dsa-source-radio" ${currentSource === "all" ? "checked" : ""}>
+          <div class="dsa-source-info">
+            <span class="dsa-source-title">All Solved Questions</span>
+            <span class="dsa-source-desc">Includes every solved question in your library, regardless of category (unless individually excluded).</span>
+          </div>
+        </label>
+
+        <label class="dsa-source-option ${currentSource === "custom" ? "active" : ""}">
+          <input type="radio" name="dsa-source-radio" value="custom" class="dsa-source-radio" ${currentSource === "custom" ? "checked" : ""}>
+          <div class="dsa-source-info">
+            <span class="dsa-source-title">Custom Topics</span>
+            <span class="dsa-source-desc">Select or deselect specific DSA topics to practice in your daily revision sessions.</span>
+          </div>
+        </label>
+      </div>
+
+      ${currentSource === "custom" ? `
+        <div class="dsa-custom-topics-box">
+          <div class="dsa-topics-header">
+            <span style="font-size: 12px; font-weight: 700; color: var(--dsa-text-main);">
+              Selected Topics (${customTopics.length} / ${CANONICAL_DSA_TOPICS.length})
+            </span>
+            <div style="display: flex; gap: 6px;">
+              <button class="dsa-btn-secondary" id="dsa-btn-select-all-topics" style="font-size: 11px; padding: 3px 8px;">Select All</button>
+              <button class="dsa-btn-secondary" id="dsa-btn-deselect-all-topics" style="font-size: 11px; padding: 3px 8px;">Deselect All</button>
+            </div>
+          </div>
+          <div class="dsa-topics-grid">
+            ${CANONICAL_DSA_TOPICS.map((topic) => {
+    const isChecked = customTopics.includes(topic);
+    return `
+                <label class="dsa-topic-chip">
+                  <input type="checkbox" class="dsa-custom-topic-check" data-topic="${topic}" ${isChecked ? "checked" : ""} />
+                  <span>${topic}</span>
+                </label>
+              `;
+  }).join("")}
+          </div>
+        </div>
+      ` : ""}
+    </div>
 
     <!-- 1. LeetCode Session Synchronization -->
     <div class="dsa-section-card">
@@ -1912,7 +2533,9 @@ var DEFAULT_SETTINGS = {
     hard: 4
   },
   autoOpenProblemTab: true,
-  showInvitation: true
+  showInvitation: true,
+  questionSource: "dsa_only",
+  customTopics: CANONICAL_DSA_TOPICS
 };
 function calculateNextRevision(feedback, currentRevisionCount = 0, options = {}) {
   const settings = options.settings || DEFAULT_SETTINGS;
@@ -1934,15 +2557,17 @@ function calculateNextRevision(feedback, currentRevisionCount = 0, options = {})
     revisionCount: currentRevisionCount + 1
   };
 }
-function getDueQuestions(library = [], todayStr = getTodayDateString()) {
+function getDueQuestions(library = [], todayStr = getTodayDateString(), settings = DEFAULT_SETTINGS) {
   return library.filter((q) => {
     if (!q || !q.nextRevisionDate) return false;
+    if (!isQuestionEligible(q, settings)) return false;
     return isDueOrOverdue(q.nextRevisionDate, todayStr);
   });
 }
 function selectNextQuestion(library = [], completedTodayIds = [], options = {}) {
   const allowRepeats = options.allowRepeatsToday || false;
   const todayStr = options.todayStr || getTodayDateString();
+  const settings = options.settings || DEFAULT_SETTINGS;
   if (!Array.isArray(library) || library.length === 0) {
     return {
       question: null,
@@ -1950,9 +2575,17 @@ function selectNextQuestion(library = [], completedTodayIds = [], options = {}) 
       stats: { total: 0, dueCount: 0, remainingEligible: 0 }
     };
   }
-  let eligiblePool = library.filter((q) => q && (q.status === "solved" || !q.status));
+  const eligibleQuestions = library.filter((q) => isQuestionEligible(q, settings));
+  if (eligibleQuestions.length === 0) {
+    return {
+      question: null,
+      reason: "no_eligible_questions",
+      stats: { total: library.length, dueCount: 0, remainingEligible: 0 }
+    };
+  }
+  let eligiblePool = eligibleQuestions.filter((q) => q && (q.status === "solved" || !q.status));
   if (eligiblePool.length === 0) {
-    eligiblePool = [...library];
+    eligiblePool = [...eligibleQuestions];
   }
   const uncompletedPool = allowRepeats ? eligiblePool : eligiblePool.filter((q) => !completedTodayIds.includes(String(q.id)));
   const dueQuestions = uncompletedPool.filter((q) => q.nextRevisionDate && isDueOrOverdue(q.nextRevisionDate, todayStr));
@@ -2077,7 +2710,9 @@ async function getSettings() {
     intervals: {
       ...DEFAULT_SETTINGS.intervals,
       ...settings && settings.intervals || {}
-    }
+    },
+    questionSource: settings?.questionSource || DEFAULT_SETTINGS.questionSource || "dsa_only",
+    customTopics: Array.isArray(settings?.customTopics) ? settings.customTopics : DEFAULT_SETTINGS.customTopics
   };
 }
 async function saveSettings(newSettings) {
@@ -2088,10 +2723,31 @@ async function saveSettings(newSettings) {
     intervals: {
       ...current.intervals,
       ...newSettings.intervals || {}
-    }
+    },
+    questionSource: newSettings.questionSource !== void 0 ? newSettings.questionSource : current.questionSource,
+    customTopics: newSettings.customTopics !== void 0 ? newSettings.customTopics : current.customTopics
   };
   await storageSet(STORAGE_KEYS.SETTINGS, merged);
   return merged;
+}
+async function updateQuestionInclusion(questionId, manualInclusion) {
+  const idStr = String(questionId);
+  const library = await getLibrary();
+  const idx = library.findIndex((q) => String(q.id) === idStr);
+  if (idx !== -1) {
+    if (manualInclusion === "auto" || !manualInclusion) {
+      delete library[idx].manualInclusion;
+      delete library[idx].isExcluded;
+    } else if (manualInclusion === "excluded") {
+      library[idx].manualInclusion = "excluded";
+      library[idx].isExcluded = true;
+    } else if (manualInclusion === "included") {
+      library[idx].manualInclusion = "included";
+      library[idx].isExcluded = false;
+    }
+    await saveLibrary(library);
+  }
+  return library;
 }
 async function getDailyProgress() {
   const today = getTodayDateString();
@@ -2769,6 +3425,8 @@ var RevisionApp = class {
     this.customHardDays = 4;
     this.libraryFilter = "all";
     this.librarySearch = "";
+    this.manageFilter = "all";
+    this.manageSearch = "";
     this.toast = null;
     this.isModalOpen = this.isPopup;
   }
@@ -2813,7 +3471,7 @@ var RevisionApp = class {
       triggerContainer.id = "dsa-trigger-wrap";
       this.root.appendChild(triggerContainer);
     }
-    const dueCount = getDueQuestions(this.library).length;
+    const dueCount = getDueQuestions(this.library, void 0, this.settings).length;
     const isCompleted = this.progress.completedCount >= this.progress.target;
     triggerContainer.innerHTML = getFloatingButtonHTML(dueCount, isCompleted);
     const btn = triggerContainer.querySelector("#dsa-floating-trigger");
@@ -2839,7 +3497,7 @@ var RevisionApp = class {
       toastWrap.id = "dsa-invitation-wrap";
       this.root.appendChild(toastWrap);
     }
-    const dueCount = getDueQuestions(this.library).length;
+    const dueCount = getDueQuestions(this.library, void 0, this.settings).length;
     toastWrap.innerHTML = getInvitationCardHTML(dueCount, this.progress.target);
     const startBtn = toastWrap.querySelector("#dsa-invitation-start");
     if (startBtn) {
@@ -2922,7 +3580,7 @@ var RevisionApp = class {
    */
   renderModalContent(panel = this.root.querySelector("#dsa-modal-panel") || this.root.querySelector("#dsa-panel-wrap")) {
     if (!panel) return;
-    const dueCount = getDueQuestions(this.library).length;
+    const dueCount = getDueQuestions(this.library, void 0, this.settings).length;
     let bodyHTML = "";
     if (this.activeTab === "revision") {
       bodyHTML = getRevisionViewHTML({
@@ -2932,10 +3590,13 @@ var RevisionApp = class {
         feedbackStep: this.feedbackStep,
         celebration: this.celebration,
         customHardDays: this.customHardDays,
+        settings: this.settings,
         dueCount
       });
     } else if (this.activeTab === "library") {
       bodyHTML = getLibraryViewHTML(this.library, this.libraryFilter, this.librarySearch);
+    } else if (this.activeTab === "manage") {
+      bodyHTML = getManageQuestionsViewHTML(this.library, this.manageFilter, this.manageSearch, this.settings);
     } else if (this.activeTab === "schedule") {
       bodyHTML = getScheduleViewHTML(this.library);
     } else if (this.activeTab === "history") {
@@ -3012,6 +3673,51 @@ var RevisionApp = class {
         this.startRevisionSession(true);
       });
     }
+    const jumpManageBtn = panel.querySelector("#dsa-btn-jump-manage");
+    if (jumpManageBtn) {
+      jumpManageBtn.addEventListener("click", () => {
+        this.activeTab = "manage";
+        this.renderModalContent(panel);
+      });
+    }
+    const jumpSettingsBtn = panel.querySelector("#dsa-btn-jump-settings");
+    if (jumpSettingsBtn) {
+      jumpSettingsBtn.addEventListener("click", () => {
+        this.activeTab = "settings";
+        this.renderModalContent(panel);
+      });
+    }
+    const manageSearchInput = panel.querySelector("#dsa-manage-search");
+    if (manageSearchInput) {
+      manageSearchInput.addEventListener("input", (e) => {
+        this.manageSearch = e.target.value;
+        this.renderModalContent(panel);
+        const newSearch = panel.querySelector("#dsa-manage-search");
+        if (newSearch) {
+          newSearch.focus();
+          newSearch.setSelectionRange(newSearch.value.length, newSearch.value.length);
+        }
+      });
+    }
+    const manageFilterBtns = panel.querySelectorAll("[data-manage-filter]");
+    manageFilterBtns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        this.manageFilter = btn.getAttribute("data-manage-filter");
+        this.renderModalContent(panel);
+      });
+    });
+    const includeToggles = panel.querySelectorAll(".dsa-toggle-include");
+    includeToggles.forEach((toggle) => {
+      toggle.addEventListener("change", async () => {
+        const qId = toggle.getAttribute("data-question-id");
+        const isChecked = toggle.checked;
+        await updateQuestionInclusion(qId, isChecked ? "included" : "excluded");
+        await this.refreshState();
+        this.showToast(`Question #${qId} ${isChecked ? "included in" : "excluded from"} revision.`, "info");
+        this.renderModalContent(panel);
+        if (!this.isPopup) this.renderInjectedMode();
+      });
+    });
     const searchInput = panel.querySelector("#dsa-library-search");
     if (searchInput) {
       searchInput.addEventListener("input", (e) => {
@@ -3062,6 +3768,62 @@ var RevisionApp = class {
     const exportJsonBtn = panel.querySelector("#dsa-btn-export-json");
     if (exportJsonBtn) {
       exportJsonBtn.addEventListener("click", () => this.downloadFile("dsa-revision-backup.json", exportToJSON(this.library, { history: this.history, settings: this.settings }), "application/json"));
+    }
+    const sourceRadios = panel.querySelectorAll('input[name="dsa-source-radio"]');
+    sourceRadios.forEach((radio) => {
+      radio.addEventListener("change", async () => {
+        if (radio.checked) {
+          const newSource = radio.value;
+          this.settings.questionSource = newSource;
+          await saveSettings({ questionSource: newSource });
+          await this.refreshState();
+          const sourceLabels = {
+            dsa_only: "DSA Only",
+            all: "All Solved Questions",
+            custom: "Custom Topics"
+          };
+          this.showToast(`Revision source set to ${sourceLabels[newSource] || newSource}!`, "success");
+          this.renderModalContent(panel);
+          if (!this.isPopup) this.renderInjectedMode();
+        }
+      });
+    });
+    const customTopicChecks = panel.querySelectorAll(".dsa-custom-topic-check");
+    customTopicChecks.forEach((ch) => {
+      ch.addEventListener("change", async () => {
+        const topic = ch.getAttribute("data-topic");
+        let activeTopics = Array.isArray(this.settings.customTopics) ? [...this.settings.customTopics] : [...CANONICAL_DSA_TOPICS];
+        if (ch.checked) {
+          if (!activeTopics.includes(topic)) activeTopics.push(topic);
+        } else {
+          activeTopics = activeTopics.filter((t) => t !== topic);
+        }
+        this.settings.customTopics = activeTopics;
+        await saveSettings({ customTopics: activeTopics });
+        await this.refreshState();
+        this.renderModalContent(panel);
+        if (!this.isPopup) this.renderInjectedMode();
+      });
+    });
+    const selectAllTopicsBtn = panel.querySelector("#dsa-btn-select-all-topics");
+    if (selectAllTopicsBtn) {
+      selectAllTopicsBtn.addEventListener("click", async () => {
+        this.settings.customTopics = [...CANONICAL_DSA_TOPICS];
+        await saveSettings({ customTopics: this.settings.customTopics });
+        await this.refreshState();
+        this.renderModalContent(panel);
+        if (!this.isPopup) this.renderInjectedMode();
+      });
+    }
+    const deselectAllTopicsBtn = panel.querySelector("#dsa-btn-deselect-all-topics");
+    if (deselectAllTopicsBtn) {
+      deselectAllTopicsBtn.addEventListener("click", async () => {
+        this.settings.customTopics = [];
+        await saveSettings({ customTopics: [] });
+        await this.refreshState();
+        this.renderModalContent(panel);
+        if (!this.isPopup) this.renderInjectedMode();
+      });
     }
     const targetPills = panel.querySelectorAll(".dsa-target-pill");
     targetPills.forEach((pill) => {
@@ -3135,11 +3897,14 @@ var RevisionApp = class {
     const selection = selectNextQuestion(
       this.library,
       this.progress.completedQuestionIds,
-      { allowRepeatsToday: allowRepeats }
+      { allowRepeatsToday: allowRepeats, settings: this.settings }
     );
     if (!selection.question) {
       if (selection.reason === "all_completed_today") {
         this.celebration = true;
+      } else if (selection.reason === "no_eligible_questions") {
+        this.selectionReason = "no_eligible_questions";
+        this.activeTab = "revision";
       } else if (selection.reason === "library_empty") {
         this.showToast("Your library is empty. Please sync or import questions.", "error");
         this.activeTab = "settings";

@@ -3,6 +3,7 @@
  */
 
 import { formatFriendlyDate, getDaysDifference } from '../services/dateUtils.js';
+import { classifyQuestion, isQuestionEligible, CANONICAL_DSA_TOPICS } from '../services/dsaClassifier.js';
 
 /**
  * Trigger confetti celebration animation on a canvas
@@ -127,6 +128,7 @@ export function getModalHeaderHTML(activeTab = 'revision') {
   const tabs = [
     { id: 'revision', label: 'Revise', icon: '⚡' },
     { id: 'library', label: 'Library', icon: '📚' },
+    { id: 'manage', label: 'Manage', icon: '🎯' },
     { id: 'schedule', label: 'Schedule', icon: '📅' },
     { id: 'history', label: 'History', icon: '⏳' },
     { id: 'settings', label: 'Sync & Settings', icon: '⚙️' }
@@ -306,7 +308,32 @@ export function getRevisionViewHTML(state) {
     `;
   }
 
-  // 4. Idle Start Screen
+  // 4. No Eligible Questions Screen
+  if (state.selectionReason === 'no_eligible_questions') {
+    const source = state.settings?.questionSource || 'dsa_only';
+    let sourceDesc = 'DSA Only';
+    if (source === 'custom') sourceDesc = 'Custom Topics';
+    else if (source === 'all') sourceDesc = 'All Solved Questions';
+
+    return `
+      ${progressBanner}
+      <div class="dsa-section-card" style="text-align: center; padding: 28px 20px;">
+        <div style="font-size: 32px; margin-bottom: 8px;">🔍</div>
+        <div style="font-size: 16px; font-weight: 700; color: var(--dsa-text-main); margin-bottom: 6px;">
+          No Eligible Revision Questions Found
+        </div>
+        <div style="font-size: 13px; color: var(--dsa-text-muted); max-width: 380px; margin: 0 auto 18px auto; line-height: 1.4;">
+          Your revision source is currently set to <strong>${sourceDesc}</strong>. No solved problems match this criteria, or matching problems were manually excluded.
+        </div>
+        <div style="display: flex; gap: 8px; justify-content: center;">
+          <button class="dsa-btn-primary" id="dsa-btn-jump-manage">Manage Questions</button>
+          <button class="dsa-btn-secondary" id="dsa-btn-jump-settings">Revision Sources</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // 5. Idle Start Screen
   return `
     ${progressBanner}
     <div class="dsa-section-card" style="text-align: center; padding: 28px 20px;">
@@ -394,6 +421,141 @@ export function getLibraryViewHTML(library = [], filter = 'all', searchQuery = '
       ${filterButtons}
     </div>
     <div class="dsa-question-list">
+      ${rowsHTML}
+    </div>
+  `;
+}
+
+/**
+ * Render Manage Questions View HTML (Include / Exclude review screen)
+ */
+export function getManageQuestionsViewHTML(library = [], filter = 'all', searchQuery = '', settings = {}) {
+  const normalizedQuery = searchQuery.toLowerCase().trim();
+
+  // Classify all questions
+  const questionsWithMeta = library.map(q => {
+    const classification = classifyQuestion(q);
+    const isIncluded = isQuestionEligible(q, settings);
+    const hasManualOverride = q.manualInclusion === 'included' || q.manualInclusion === 'excluded' || q.isExcluded === true;
+    return {
+      question: q,
+      classification,
+      isIncluded,
+      hasManualOverride
+    };
+  });
+
+  const totalCount = questionsWithMeta.length;
+  const dsaCount = questionsWithMeta.filter(item => item.classification.isDsa).length;
+  const nonDsaCount = questionsWithMeta.filter(item => item.classification.isNonDsa).length;
+  const needsReviewCount = questionsWithMeta.filter(item => item.classification.needsReview).length;
+  const excludedCount = questionsWithMeta.filter(item => !item.isIncluded).length;
+  const includedCount = questionsWithMeta.filter(item => item.isIncluded).length;
+
+  let filtered = questionsWithMeta.filter(item => {
+    const q = item.question;
+    if (normalizedQuery) {
+      const matchId = String(q.id).includes(normalizedQuery);
+      const matchTitle = (q.title || '').toLowerCase().includes(normalizedQuery);
+      const matchTopics = (q.topics || []).some(t => String(t).toLowerCase().includes(normalizedQuery));
+      if (!matchId && !matchTitle && !matchTopics) return false;
+    }
+
+    if (filter === 'dsa') return item.classification.isDsa;
+    if (filter === 'nondsa') return item.classification.isNonDsa;
+    if (filter === 'needs_review') return item.classification.needsReview;
+    if (filter === 'excluded') return !item.isIncluded;
+    if (filter === 'included') return item.isIncluded;
+    return true;
+  });
+
+  const filterButtons = [
+    { id: 'all', label: `All (${totalCount})` },
+    { id: 'dsa', label: `DSA (${dsaCount})` },
+    { id: 'nondsa', label: `Non-DSA (${nonDsaCount})` },
+    { id: 'needs_review', label: `Needs Review (${needsReviewCount})` },
+    { id: 'included', label: `Included (${includedCount})` },
+    { id: 'excluded', label: `Excluded (${excludedCount})` }
+  ].map(b => `<button class="dsa-filter-btn ${filter === b.id ? 'active' : ''}" data-manage-filter="${b.id}">${b.label}</button>`).join('');
+
+  const rowsHTML = filtered.length > 0 ? filtered.map(item => {
+    const q = item.question;
+    const diffClass = q.difficulty === 'Easy' ? 'dsa-diff-easy' : (q.difficulty === 'Hard' ? 'dsa-diff-hard' : 'dsa-diff-medium');
+    const topicsHTML = (q.topics || []).length > 0
+      ? (q.topics || []).slice(0, 3).map(t => `<span class="dsa-topic-tag">${t}</span>`).join('')
+      : '<span class="dsa-topic-tag" style="color: #B45309;">No tags</span>';
+
+    let catBadge = '';
+    if (item.classification.isDsa) {
+      catBadge = `<span class="dsa-cat-badge dsa-cat-dsa">🟢 DSA</span>`;
+    } else if (item.classification.isNonDsa) {
+      catBadge = `<span class="dsa-cat-badge dsa-cat-nondsa">🔴 Non-DSA</span>`;
+    } else {
+      catBadge = `<span class="dsa-cat-badge dsa-cat-review" title="${item.classification.reason}">⚠️ Needs Review</span>`;
+    }
+
+    let overrideBadge = '';
+    if (item.hasManualOverride) {
+      overrideBadge = `<span style="font-size: 10px; font-weight: 700; color: var(--dsa-purple-start); margin-left: 4px;" title="Manually overridden by user">(Manual)</span>`;
+    }
+
+    return `
+      <div class="dsa-list-item" style="padding: 10px 12px;">
+        <div class="dsa-item-left" style="flex: 1; min-width: 0;">
+          <label class="dsa-switch" title="Toggle inclusion in revision">
+            <input type="checkbox" class="dsa-toggle-include" data-question-id="${q.id}" ${item.isIncluded ? 'checked' : ''} />
+            <span class="dsa-slider"></span>
+          </label>
+          <div class="dsa-item-title-col" style="flex: 1; min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <span class="dsa-item-title" title="${q.title}">#${q.id}. ${q.title}</span>
+              ${catBadge}
+              ${overrideBadge}
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; margin-top: 3px; flex-wrap: wrap;">
+              <span class="dsa-meta-badge ${diffClass}" style="padding: 1px 5px; font-size: 10px;">${q.difficulty || 'Med'}</span>
+              <span style="font-size: 11px; color: ${item.isIncluded ? 'var(--dsa-easy-text)' : 'var(--dsa-hard-text)'}; font-weight: 600;">
+                ${item.isIncluded ? '✓ Included' : '✕ Excluded'}
+              </span>
+              <span style="color: #CBD5E1;">•</span>
+              <span style="font-size: 11px; color: var(--dsa-text-muted);">${q.status === 'solved' ? 'Solved' : 'Attempted'}</span>
+              <span style="color: #CBD5E1;">•</span>
+              <div style="display: inline-flex; gap: 4px;">${topicsHTML}</div>
+            </div>
+          </div>
+        </div>
+        <div class="dsa-item-actions">
+          <a href="${q.url}" target="_blank" rel="noopener noreferrer" class="dsa-btn-secondary dsa-btn-mini" title="Open in LeetCode">↗</a>
+        </div>
+      </div>
+    `;
+  }).join('') : `<div style="text-align: center; padding: 24px; color: var(--dsa-text-muted);">No questions match the current filter.</div>`;
+
+  return `
+    <div class="dsa-section-card" style="padding: 12px 14px; margin-bottom: 2px;">
+      <div style="font-size: 13.5px; font-weight: 700; color: var(--dsa-text-main); margin-bottom: 4px;">
+        🎯 Manage Revision Questions
+      </div>
+      <div style="font-size: 12px; color: var(--dsa-text-muted); margin-bottom: 8px;">
+        Review synced questions, inspect topic classifications, and toggle whether each question is included or excluded from daily revision.
+      </div>
+      <div class="dsa-manage-stats">
+        <span class="dsa-stat-chip">✨ ${dsaCount} DSA</span>
+        <span class="dsa-stat-chip">🔴 ${nonDsaCount} Non-DSA</span>
+        <span class="dsa-stat-chip">⚠️ ${needsReviewCount} Needs Review</span>
+        <span class="dsa-stat-chip">🚫 ${excludedCount} Excluded</span>
+      </div>
+    </div>
+
+    <div class="dsa-search-bar">
+      <input type="text" class="dsa-input" id="dsa-manage-search" placeholder="Search by title, number, or tag..." value="${searchQuery}" />
+    </div>
+
+    <div class="dsa-filter-row">
+      ${filterButtons}
+    </div>
+
+    <div class="dsa-question-list" style="max-height: 380px;">
       ${rowsHTML}
     </div>
   `;
@@ -494,11 +656,75 @@ export function getHistoryViewHTML(history = []) {
 export function getSettingsViewHTML(settings, syncMeta, toast = null) {
   const targetOptions = [1, 2, 3, 5, 6, 10];
   const isCustomTarget = !targetOptions.includes(settings.dailyTarget);
+  const currentSource = settings.questionSource || 'dsa_only';
+  const customTopics = Array.isArray(settings.customTopics) ? settings.customTopics : CANONICAL_DSA_TOPICS;
 
   const toastHTML = toast ? `<div class="dsa-toast dsa-toast-${toast.type}">${toast.message}</div>` : '';
 
   return `
     ${toastHTML}
+
+    <!-- 0. Revision Question Sources -->
+    <div class="dsa-section-card">
+      <div class="dsa-section-title">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        Revision Question Sources
+      </div>
+      <div class="dsa-section-desc">
+        Choose which types of solved problems are eligible for your daily revision sessions.
+      </div>
+      
+      <div class="dsa-source-selector">
+        <label class="dsa-source-option ${currentSource === 'dsa_only' ? 'active' : ''}">
+          <input type="radio" name="dsa-source-radio" value="dsa_only" class="dsa-source-radio" ${currentSource === 'dsa_only' ? 'checked' : ''}>
+          <div class="dsa-source-info">
+            <span class="dsa-source-title">DSA Only (Default)</span>
+            <span class="dsa-source-desc">Excludes SQL, Database, Pandas, Shell, and other non-DSA problems. Questions needing review remain excluded unless manually enabled.</span>
+          </div>
+        </label>
+
+        <label class="dsa-source-option ${currentSource === 'all' ? 'active' : ''}">
+          <input type="radio" name="dsa-source-radio" value="all" class="dsa-source-radio" ${currentSource === 'all' ? 'checked' : ''}>
+          <div class="dsa-source-info">
+            <span class="dsa-source-title">All Solved Questions</span>
+            <span class="dsa-source-desc">Includes every solved question in your library, regardless of category (unless individually excluded).</span>
+          </div>
+        </label>
+
+        <label class="dsa-source-option ${currentSource === 'custom' ? 'active' : ''}">
+          <input type="radio" name="dsa-source-radio" value="custom" class="dsa-source-radio" ${currentSource === 'custom' ? 'checked' : ''}>
+          <div class="dsa-source-info">
+            <span class="dsa-source-title">Custom Topics</span>
+            <span class="dsa-source-desc">Select or deselect specific DSA topics to practice in your daily revision sessions.</span>
+          </div>
+        </label>
+      </div>
+
+      ${currentSource === 'custom' ? `
+        <div class="dsa-custom-topics-box">
+          <div class="dsa-topics-header">
+            <span style="font-size: 12px; font-weight: 700; color: var(--dsa-text-main);">
+              Selected Topics (${customTopics.length} / ${CANONICAL_DSA_TOPICS.length})
+            </span>
+            <div style="display: flex; gap: 6px;">
+              <button class="dsa-btn-secondary" id="dsa-btn-select-all-topics" style="font-size: 11px; padding: 3px 8px;">Select All</button>
+              <button class="dsa-btn-secondary" id="dsa-btn-deselect-all-topics" style="font-size: 11px; padding: 3px 8px;">Deselect All</button>
+            </div>
+          </div>
+          <div class="dsa-topics-grid">
+            ${CANONICAL_DSA_TOPICS.map(topic => {
+              const isChecked = customTopics.includes(topic);
+              return `
+                <label class="dsa-topic-chip">
+                  <input type="checkbox" class="dsa-custom-topic-check" data-topic="${topic}" ${isChecked ? 'checked' : ''} />
+                  <span>${topic}</span>
+                </label>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      ` : ''}
+    </div>
 
     <!-- 1. LeetCode Session Synchronization -->
     <div class="dsa-section-card">

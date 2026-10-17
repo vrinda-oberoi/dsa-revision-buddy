@@ -10,6 +10,7 @@ import {
   getModalHeaderHTML,
   getRevisionViewHTML,
   getLibraryViewHTML,
+  getManageQuestionsViewHTML,
   getScheduleViewHTML,
   getHistoryViewHTML,
   getSettingsViewHTML,
@@ -29,10 +30,12 @@ import {
   getSyncMeta,
   updateSyncMeta,
   getHistory,
+  updateQuestionInclusion,
   resetDailyProgressForTesting
 } from './storage/storage.js';
 
 import { selectNextQuestion, getDueQuestions } from './services/scheduler.js';
+import { CANONICAL_DSA_TOPICS } from './services/dsaClassifier.js';
 import { syncLeetCodeSolvedQuestions } from './services/leetcodeSync.js';
 import {
   importFromCSV,
@@ -67,6 +70,8 @@ export class RevisionApp {
     this.customHardDays = 4;
     this.libraryFilter = 'all';
     this.librarySearch = '';
+    this.manageFilter = 'all';
+    this.manageSearch = '';
     this.toast = null;
     this.isModalOpen = this.isPopup; // Popups are always open
   }
@@ -118,7 +123,7 @@ export class RevisionApp {
       this.root.appendChild(triggerContainer);
     }
 
-    const dueCount = getDueQuestions(this.library).length;
+    const dueCount = getDueQuestions(this.library, undefined, this.settings).length;
     const isCompleted = this.progress.completedCount >= this.progress.target;
     triggerContainer.innerHTML = getFloatingButtonHTML(dueCount, isCompleted);
 
@@ -150,7 +155,7 @@ export class RevisionApp {
       this.root.appendChild(toastWrap);
     }
 
-    const dueCount = getDueQuestions(this.library).length;
+    const dueCount = getDueQuestions(this.library, undefined, this.settings).length;
     toastWrap.innerHTML = getInvitationCardHTML(dueCount, this.progress.target);
 
     const startBtn = toastWrap.querySelector('#dsa-invitation-start');
@@ -245,7 +250,7 @@ export class RevisionApp {
   renderModalContent(panel = this.root.querySelector('#dsa-modal-panel') || this.root.querySelector('#dsa-panel-wrap')) {
     if (!panel) return;
 
-    const dueCount = getDueQuestions(this.library).length;
+    const dueCount = getDueQuestions(this.library, undefined, this.settings).length;
 
     let bodyHTML = '';
     if (this.activeTab === 'revision') {
@@ -256,10 +261,13 @@ export class RevisionApp {
         feedbackStep: this.feedbackStep,
         celebration: this.celebration,
         customHardDays: this.customHardDays,
+        settings: this.settings,
         dueCount
       });
     } else if (this.activeTab === 'library') {
       bodyHTML = getLibraryViewHTML(this.library, this.libraryFilter, this.librarySearch);
+    } else if (this.activeTab === 'manage') {
+      bodyHTML = getManageQuestionsViewHTML(this.library, this.manageFilter, this.manageSearch, this.settings);
     } else if (this.activeTab === 'schedule') {
       bodyHTML = getScheduleViewHTML(this.library);
     } else if (this.activeTab === 'history') {
@@ -355,6 +363,59 @@ export class RevisionApp {
       });
     }
 
+    // 7b. Jump buttons from No Eligible Questions screen
+    const jumpManageBtn = panel.querySelector('#dsa-btn-jump-manage');
+    if (jumpManageBtn) {
+      jumpManageBtn.addEventListener('click', () => {
+        this.activeTab = 'manage';
+        this.renderModalContent(panel);
+      });
+    }
+
+    const jumpSettingsBtn = panel.querySelector('#dsa-btn-jump-settings');
+    if (jumpSettingsBtn) {
+      jumpSettingsBtn.addEventListener('click', () => {
+        this.activeTab = 'settings';
+        this.renderModalContent(panel);
+      });
+    }
+
+    // 7c. Manage Questions Search & Filters
+    const manageSearchInput = panel.querySelector('#dsa-manage-search');
+    if (manageSearchInput) {
+      manageSearchInput.addEventListener('input', (e) => {
+        this.manageSearch = e.target.value;
+        this.renderModalContent(panel);
+        const newSearch = panel.querySelector('#dsa-manage-search');
+        if (newSearch) {
+          newSearch.focus();
+          newSearch.setSelectionRange(newSearch.value.length, newSearch.value.length);
+        }
+      });
+    }
+
+    const manageFilterBtns = panel.querySelectorAll('[data-manage-filter]');
+    manageFilterBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.manageFilter = btn.getAttribute('data-manage-filter');
+        this.renderModalContent(panel);
+      });
+    });
+
+    // 7d. Manage Questions Include/Exclude Toggles
+    const includeToggles = panel.querySelectorAll('.dsa-toggle-include');
+    includeToggles.forEach(toggle => {
+      toggle.addEventListener('change', async () => {
+        const qId = toggle.getAttribute('data-question-id');
+        const isChecked = toggle.checked;
+        await updateQuestionInclusion(qId, isChecked ? 'included' : 'excluded');
+        await this.refreshState();
+        this.showToast(`Question #${qId} ${isChecked ? 'included in' : 'excluded from'} revision.`, 'info');
+        this.renderModalContent(panel);
+        if (!this.isPopup) this.renderInjectedMode();
+      });
+    });
+
     // 8. Library Search & Filters
     const searchInput = panel.querySelector('#dsa-library-search');
     if (searchInput) {
@@ -420,6 +481,67 @@ export class RevisionApp {
     const exportJsonBtn = panel.querySelector('#dsa-btn-export-json');
     if (exportJsonBtn) {
       exportJsonBtn.addEventListener('click', () => this.downloadFile('dsa-revision-backup.json', exportToJSON(this.library, { history: this.history, settings: this.settings }), 'application/json'));
+    }
+
+    // 14b. Revision Question Sources (DSA Only, All, Custom)
+    const sourceRadios = panel.querySelectorAll('input[name="dsa-source-radio"]');
+    sourceRadios.forEach(radio => {
+      radio.addEventListener('change', async () => {
+        if (radio.checked) {
+          const newSource = radio.value;
+          this.settings.questionSource = newSource;
+          await saveSettings({ questionSource: newSource });
+          await this.refreshState();
+          const sourceLabels = {
+            dsa_only: 'DSA Only',
+            all: 'All Solved Questions',
+            custom: 'Custom Topics'
+          };
+          this.showToast(`Revision source set to ${sourceLabels[newSource] || newSource}!`, 'success');
+          this.renderModalContent(panel);
+          if (!this.isPopup) this.renderInjectedMode();
+        }
+      });
+    });
+
+    const customTopicChecks = panel.querySelectorAll('.dsa-custom-topic-check');
+    customTopicChecks.forEach(ch => {
+      ch.addEventListener('change', async () => {
+        const topic = ch.getAttribute('data-topic');
+        let activeTopics = Array.isArray(this.settings.customTopics) ? [...this.settings.customTopics] : [...CANONICAL_DSA_TOPICS];
+        if (ch.checked) {
+          if (!activeTopics.includes(topic)) activeTopics.push(topic);
+        } else {
+          activeTopics = activeTopics.filter(t => t !== topic);
+        }
+        this.settings.customTopics = activeTopics;
+        await saveSettings({ customTopics: activeTopics });
+        await this.refreshState();
+        this.renderModalContent(panel);
+        if (!this.isPopup) this.renderInjectedMode();
+      });
+    });
+
+    const selectAllTopicsBtn = panel.querySelector('#dsa-btn-select-all-topics');
+    if (selectAllTopicsBtn) {
+      selectAllTopicsBtn.addEventListener('click', async () => {
+        this.settings.customTopics = [...CANONICAL_DSA_TOPICS];
+        await saveSettings({ customTopics: this.settings.customTopics });
+        await this.refreshState();
+        this.renderModalContent(panel);
+        if (!this.isPopup) this.renderInjectedMode();
+      });
+    }
+
+    const deselectAllTopicsBtn = panel.querySelector('#dsa-btn-deselect-all-topics');
+    if (deselectAllTopicsBtn) {
+      deselectAllTopicsBtn.addEventListener('click', async () => {
+        this.settings.customTopics = [];
+        await saveSettings({ customTopics: [] });
+        await this.refreshState();
+        this.renderModalContent(panel);
+        if (!this.isPopup) this.renderInjectedMode();
+      });
     }
 
     // 15. Daily Target Selector
@@ -502,12 +624,15 @@ export class RevisionApp {
     const selection = selectNextQuestion(
       this.library,
       this.progress.completedQuestionIds,
-      { allowRepeatsToday: allowRepeats }
+      { allowRepeatsToday: allowRepeats, settings: this.settings }
     );
 
     if (!selection.question) {
       if (selection.reason === 'all_completed_today') {
         this.celebration = true;
+      } else if (selection.reason === 'no_eligible_questions') {
+        this.selectionReason = 'no_eligible_questions';
+        this.activeTab = 'revision';
       } else if (selection.reason === 'library_empty') {
         this.showToast('Your library is empty. Please sync or import questions.', 'error');
         this.activeTab = 'settings';

@@ -128,7 +128,9 @@ export async function getSettings() {
     intervals: {
       ...DEFAULT_SETTINGS.intervals,
       ...((settings && settings.intervals) || {})
-    }
+    },
+    questionSource: settings?.questionSource || DEFAULT_SETTINGS.questionSource || 'dsa_only',
+    customTopics: Array.isArray(settings?.customTopics) ? settings.customTopics : DEFAULT_SETTINGS.customTopics
   };
 }
 
@@ -145,10 +147,40 @@ export async function saveSettings(newSettings) {
     intervals: {
       ...current.intervals,
       ...(newSettings.intervals || {})
-    }
+    },
+    questionSource: newSettings.questionSource !== undefined ? newSettings.questionSource : current.questionSource,
+    customTopics: newSettings.customTopics !== undefined ? newSettings.customTopics : current.customTopics
   };
   await storageSet(STORAGE_KEYS.SETTINGS, merged);
   return merged;
+}
+
+/**
+ * Update manual inclusion/exclusion status of a question
+ * @param {string|number} questionId 
+ * @param {'included'|'excluded'|'auto'} manualInclusion 
+ * @returns {Promise<Array>} updated library
+ */
+export async function updateQuestionInclusion(questionId, manualInclusion) {
+  const idStr = String(questionId);
+  const library = await getLibrary();
+  const idx = library.findIndex(q => String(q.id) === idStr);
+
+  if (idx !== -1) {
+    if (manualInclusion === 'auto' || !manualInclusion) {
+      delete library[idx].manualInclusion;
+      delete library[idx].isExcluded;
+    } else if (manualInclusion === 'excluded') {
+      library[idx].manualInclusion = 'excluded';
+      library[idx].isExcluded = true;
+    } else if (manualInclusion === 'included') {
+      library[idx].manualInclusion = 'included';
+      library[idx].isExcluded = false;
+    }
+    await saveLibrary(library);
+  }
+
+  return library;
 }
 
 /**

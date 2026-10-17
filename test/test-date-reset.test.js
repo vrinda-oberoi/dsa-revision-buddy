@@ -25,9 +25,9 @@ test('Daily progress, completion tracking, and midnight rollover reset', async (
 
   // Initialize library with mock questions
   await saveLibrary([
-    { id: '1', title: 'Two Sum', status: 'solved', revisionCount: 0, nextRevisionDate: null },
-    { id: '2', title: 'Add Two Numbers', status: 'solved', revisionCount: 0, nextRevisionDate: null },
-    { id: '3', title: 'Longest Substring', status: 'solved', revisionCount: 0, nextRevisionDate: null }
+    { id: '1', title: 'Two Sum', topics: ['Array'], status: 'solved', revisionCount: 0, nextRevisionDate: null },
+    { id: '2', title: 'Add Two Numbers', topics: ['Linked List'], status: 'solved', revisionCount: 0, nextRevisionDate: null },
+    { id: '3', title: 'Longest Substring', topics: ['Sliding Window'], status: 'solved', revisionCount: 0, nextRevisionDate: null }
   ]);
 
   // Initial progress: 0/3
